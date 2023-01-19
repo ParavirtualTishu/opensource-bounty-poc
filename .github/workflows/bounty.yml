@@ -1,0 +1,50 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+on: issue_comment
+
+jobs:
+  commented_set:
+    name: Set the bounty
+    if: ${{ startsWith(github.event.comment.body, '/set_bounty') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
+      # the issuers.txt and hunters.txt files
+      - uses: actions/checkout@v3
+
+      - name: Check comment is "/set_bounty bounty"
+        uses: actions-ecosystem/action-regex-match@v2.0.2
+        id: exact_match
+        with:
+          text: ${{ github.event.comment.body }}
+          regex: '^\/set_bounty \d+$'
+      
+      - name: Set bounty
+        if: ${{ steps.exact_match.outputs.match != '' }}
+        run: |
+          echo "set bounty!"
+
+  commented_grant:
+    name: Grant the bounty
+    if: ${{ startsWith(github.event.comment.body, '/grant_bounty') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
+      # the issuers.txt and hunters.txt files
+      - uses: actions/checkout@v3
+
+      - name: Check comment is "/grant_bounty @github_username"
+        uses: actions-ecosystem/action-regex-match@v2.0.2
+        id: exact_match
+        with:
+          text: ${{ github.event.comment.body }}
+          regex: '^\/grant_bounty @\w+$'
+
+      - name: Grant bounty
+        if: ${{ steps.exact_match.outputs.match != '' }}
+        run: |
+          echo "grant bounty!"
