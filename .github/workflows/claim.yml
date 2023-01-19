@@ -1,0 +1,47 @@
+name: Claim CI
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  commented_grant:
+      name: Grant the bounty
+      if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true }}
+      runs-on: ubuntu-latest
+      container: 
+        image: paravirtualtishu/mxpy:latest
+        env:
+          GITHUB_USER: ${{ github.event.pull_request.user.login }}
+          GITHUB_ISSUE_ID: ${{ github.event.issue.id }}
+
+      steps:
+        # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
+        # the issuers.txt and hunters.txt files
+        # - uses: actions/checkout@v3
+
+        # - name: Check comment is "/grant_bounty @github_username"
+        #   uses: actions-ecosystem/action-regex-match@v2.0.2
+        #   id: exact_match
+        #   with:
+        #     text: ${{ github.event.comment.body }}
+        #     regex: '^\/grant_bounty @(\w+)$'
+
+        - name: Uppercase username
+          shell: bash
+          run: |
+            echo "$GITHUB_USER"
+            echo "$GITHUB_ISSUE_ID"
+            echo "$GITHUB_PEM_SECRET_KEY"
+            echo "GITHUB_PEM_SECRET_KEY=${GITHUB_USER^^}_PEM_SECRET" >>${GITHUB_ENV}
+
+        - name: Grant bounty
+          shell: bash
+          env:
+            GITHUB_CONTEXT: ${{ toJson(github) }}
+            # GITHUB_HUNTER: ${{ steps.exact_match.outputs.group1 }}
+          # if: ${{ steps.exact_match.outputs.match != '' && github.event.comment.user.login == github.event.issue.user.login }}
+          run: |
+            echo "$GITHUB_CONTEXT"
+            echo "${{ secrets[env.GITHUB_PEM_SECRET_KEY] }}" > key.pem
