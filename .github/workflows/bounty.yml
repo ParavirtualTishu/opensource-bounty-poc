@@ -29,8 +29,8 @@ jobs:
       - name: Uppercase username
         shell: bash
         run: |
-          echo "GITHUB_PEM_SECRET_KEY=${GITHUB_USER^^}_PEM_SECRET" >>${GITHUB_ENV}
           echo "$GITHUB_PEM_SECRET_KEY"
+          echo "GITHUB_PEM_SECRET_KEY=${GITHUB_USER^^}_PEM_SECRET" >>${GITHUB_ENV}
 
       - name: Set bounty
         shell: bash
@@ -41,6 +41,8 @@ jobs:
           echo "Set bounty from container!"
           echo "${{ secrets[env.GITHUB_PEM_SECRET_KEY] }}" > key.pem
           cat key.pem
+          which mxpy
+          find . -name "multiversx_sdk_cli"
           mxpy --help
 
   commented_grant:
