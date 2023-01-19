@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Bounty CI
 
 on: issue_comment
 
@@ -13,6 +13,7 @@ jobs:
       image: paravirtualtishu/mxpy:latest
       env:
         GITHUB_USER: ${{ github.event.comment.user.login }}
+        GITHUB_ISSUE_ID: ${{ github.event.issue.id }}
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
@@ -24,7 +25,7 @@ jobs:
         id: exact_match
         with:
           text: ${{ github.event.comment.body }}
-          regex: '^\/set_bounty \d+$'
+          regex: '^\/set_bounty (\d+)$'
       
       - name: Uppercase username
         shell: bash
@@ -36,19 +37,36 @@ jobs:
         shell: bash
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_ISSUE_BOUNTY: ${{ steps.exact_match.outputs.group1 }}
         if: ${{ steps.exact_match.outputs.match != '' && github.event.comment.user.login == github.event.issue.user.login }}
         run: |
-          echo "Set bounty from container!"
+          echo "The bounty: $GITHUB_ISSUE_BOUNTY"
           echo "${{ secrets[env.GITHUB_PEM_SECRET_KEY] }}" > key.pem
-          cat key.pem
-          which mxpy
-          find . -name "multiversx_sdk_cli"
-          mxpy --help
+          issue_id_hex=$(echo -n $GITHUB_ISSUE_ID | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+          user_hex=$(echo -n $GITHUB_USER | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+
+          echo $issue_id_hex
+          echo $user_hex
+
+          mxpy --verbose contract call erd1qqqqqqqqqqqqqpgqpyznjrver9cgfr33dwtq7tjkql500tv6uyhqwqgjmg \
+            --pem key.pem \
+            --gas-limit=10000000 \
+            --function="register_issue" \
+            --chain D \
+            --proxy="https://devnet-gateway.multiversx.com" \
+            --recall-nonce \
+            --send \
+            --arguments 0x"$issue_id_hex" 0x"$user_hex" "$GITHUB_ISSUE_BOUNTY"000000000000000000
 
   commented_grant:
     name: Grant the bounty
     if: ${{ startsWith(github.event.comment.body, '/grant_bounty') }}
     runs-on: ubuntu-latest
+    container: 
+      image: paravirtualtishu/mxpy:latest
+      env:
+        GITHUB_USER: ${{ github.event.comment.user.login }}
+        GITHUB_ISSUE_ID: ${{ github.event.issue.id }}
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
@@ -60,9 +78,31 @@ jobs:
         id: exact_match
         with:
           text: ${{ github.event.comment.body }}
-          regex: '^\/grant_bounty @\w+$'
+          regex: '^\/grant_bounty @(\w+)$'
+
+      - name: Uppercase username
+        shell: bash
+        run: |
+          echo "$GITHUB_PEM_SECRET_KEY"
+          echo "GITHUB_PEM_SECRET_KEY=${GITHUB_USER^^}_PEM_SECRET" >>${GITHUB_ENV}
 
       - name: Grant bounty
+        shell: bash
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          GITHUB_HUNTER: ${{ steps.exact_match.outputs.group1 }}
         if: ${{ steps.exact_match.outputs.match != '' && github.event.comment.user.login == github.event.issue.user.login }}
         run: |
-          echo "Grant bounty!"
+          echo "${{ secrets[env.GITHUB_PEM_SECRET_KEY] }}" > key.pem
+          issue_id_hex=$(echo -n $GITHUB_ISSUE_ID | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+          user_hex=$(echo -n $GITHUB_HUNTER | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+
+          mxpy --verbose contract call erd1qqqqqqqqqqqqqpgqpyznjrver9cgfr33dwtq7tjkql500tv6uyhqwqgjmg \
+            --pem key.pem \
+            --gas-limit=10000000 \
+            --function="claim_bounty" \
+            --chain D \
+            --proxy="https://devnet-gateway.multiversx.com" \
+            --recall-nonce \
+            --send \
+            --arguments 0x"$issue_id_hex" 0x"$user_hex"
