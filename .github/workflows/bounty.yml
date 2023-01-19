@@ -14,7 +14,6 @@ jobs:
       env:
         GITHUB_USER: ${{ github.event.comment.user.login }}
         GITHUB_ISSUE_ID: ${{ github.event.issue.id }}
-        CONTRACT_ADDRESS: erd1qqqqqqqqqqqqqpgq6k3ujmztmpj4kz0660u237lwnvcc7tlqu5msppanh7
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
@@ -49,7 +48,7 @@ jobs:
           echo $issue_id_hex
           echo $user_hex
 
-          mxpy --verbose contract call "$CONTRACT_ADDRESS" \
+          mxpy --verbose contract call erd1qqqqqqqqqqqqqpgq6k3ujmztmpj4kz0660u237lwnvcc7tlqu5msppanh7 \
             --pem key.pem \
             --gas-limit=10000000 \
             --function="register_issue" \
@@ -98,7 +97,7 @@ jobs:
           issue_id_hex=$(echo -n $GITHUB_ISSUE_ID | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
           user_hex=$(echo -n $GITHUB_HUNTER | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
 
-          mxpy --verbose contract call "$CONTRACT_ADDRESS" \
+          mxpy --verbose contract call erd1qqqqqqqqqqqqqpgq6k3ujmztmpj4kz0660u237lwnvcc7tlqu5msppanh7 \
             --pem key.pem \
             --gas-limit=10000000 \
             --function="claim_bounty" \
@@ -144,7 +143,7 @@ jobs:
           echo "${{ secrets[env.GITHUB_PEM_SECRET_KEY] }}" > key.pem
           user_hex=$(echo -n $GITHUB_USER | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
 
-          mxpy --verbose contract call "$CONTRACT_ADDRESS" \
+          mxpy --verbose contract call erd1qqqqqqqqqqqqqpgq6k3ujmztmpj4kz0660u237lwnvcc7tlqu5msppanh7 \
             --pem key.pem \
             --gas-limit=10000000 \
             --function="claim_fund" \
