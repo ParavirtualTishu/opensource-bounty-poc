@@ -1,9 +1,10 @@
 name: Claim CI
 
 on:
-  push:
+  pull_request:
     branches:
-    - main
+      - main
+    types: [closed]
 
 jobs:
   commented_grant:
