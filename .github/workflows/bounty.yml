@@ -23,9 +23,11 @@ jobs:
           regex: '^\/set_bounty \d+$'
       
       - name: Set bounty
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
         if: ${{ steps.exact_match.outputs.match != '' }}
         run: |
-          echo "set bounty!"
+          echo "$GITHUB_CONTEXT"
 
   commented_grant:
     name: Grant the bounty
