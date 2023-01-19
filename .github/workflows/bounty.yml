@@ -14,6 +14,7 @@ jobs:
       env:
         GITHUB_USER: ${{ github.event.comment.user.login }}
         GITHUB_ISSUE_ID: ${{ github.event.issue.id }}
+        CONTRACT_ADDRESS: erd1qqqqqqqqqqqqqpgq6k3ujmztmpj4kz0660u237lwnvcc7tlqu5msppanh7
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
@@ -48,7 +49,7 @@ jobs:
           echo $issue_id_hex
           echo $user_hex
 
-          mxpy --verbose contract call erd1qqqqqqqqqqqqqpgqpyznjrver9cgfr33dwtq7tjkql500tv6uyhqwqgjmg \
+          mxpy --verbose contract call "$CONTRACT_ADDRESS" \
             --pem key.pem \
             --gas-limit=10000000 \
             --function="register_issue" \
@@ -97,7 +98,7 @@ jobs:
           issue_id_hex=$(echo -n $GITHUB_ISSUE_ID | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
           user_hex=$(echo -n $GITHUB_HUNTER | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
 
-          mxpy --verbose contract call erd1qqqqqqqqqqqqqpgqpyznjrver9cgfr33dwtq7tjkql500tv6uyhqwqgjmg \
+          mxpy --verbose contract call "$CONTRACT_ADDRESS" \
             --pem key.pem \
             --gas-limit=10000000 \
             --function="claim_bounty" \
@@ -106,3 +107,49 @@ jobs:
             --recall-nonce \
             --send \
             --arguments 0x"$issue_id_hex" 0x"$user_hex"
+
+  claim_fund:
+    name: Reclaim your fund
+    if: ${{ startsWith(github.event.comment.body, '/claim_fund') }}
+    runs-on: ubuntu-latest
+    container: 
+      image: paravirtualtishu/mxpy:latest
+      env:
+        GITHUB_USER: ${{ github.event.comment.user.login }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so the job can check
+      # the issuers.txt and hunters.txt files
+      # - uses: actions/checkout@v3
+
+      - name: Check comment is "/claim_fund"
+        uses: actions-ecosystem/action-regex-match@v2.0.2
+        id: exact_match
+        with:
+          text: ${{ github.event.comment.body }}
+          regex: '^\/claim_fund$'
+
+      - name: Uppercase username
+        shell: bash
+        run: |
+          echo "$GITHUB_PEM_SECRET_KEY"
+          echo "GITHUB_PEM_SECRET_KEY=${GITHUB_USER^^}_PEM_SECRET" >>${GITHUB_ENV}
+
+      - name: Claim bounty fund back
+        shell: bash
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        if: ${{ steps.exact_match.outputs.match != '' && github.event.comment.user.login == github.event.issue.user.login }}
+        run: |
+          echo "${{ secrets[env.GITHUB_PEM_SECRET_KEY] }}" > key.pem
+          user_hex=$(echo -n $GITHUB_USER | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+
+          mxpy --verbose contract call "$CONTRACT_ADDRESS" \
+            --pem key.pem \
+            --gas-limit=10000000 \
+            --function="claim_fund" \
+            --chain D \
+            --proxy="https://devnet-gateway.multiversx.com" \
+            --recall-nonce \
+            --send \
+            --arguments 0x"$user_hex"
